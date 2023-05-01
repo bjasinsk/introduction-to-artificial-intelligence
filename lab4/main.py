@@ -83,7 +83,7 @@ def id3(matrix, y, d, u):
         gain = infGain(u, simpleD)
         if gain > maxGain:
             maxGain = gain
-            maxAttribute = simpleD 
+            maxAttribute = simpleD
 
     dToDivide = maxAttribute
 
@@ -93,7 +93,7 @@ def id3(matrix, y, d, u):
             Uj[x[d]] = [(x, y)]
         else:
             Uj[x[d]].append((x, y))
-
+    
 
 if __name__ == '__main__':
     Y = {"not_recom", "recommend", "very_recom", "priority", "spec_prior"}
