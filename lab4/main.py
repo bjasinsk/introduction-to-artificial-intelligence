@@ -83,7 +83,7 @@ def id3(matrix, y, d, u):
         gain = infGain(u, simpleD)
         if gain > maxGain:
             maxGain = gain
-            maxAttribute = simpleD
+            maxAttribute = simpleD 
 
     dToDivide = maxAttribute
 
