@@ -16,11 +16,36 @@ def entropy(u):
     result = 0.0
     n = len(u)
 
-    for value in yValues:
-        v = yValues[value] / n
+    for classValue in yValues:
+        v = yValues[classValue] / n
         result -= v * math.log2(v)
     return result
+#W Twoim przypadku zbiór Y to zbiór klas, czyli klasa, którą chcesz przewidzieć.
+#Zbiór D to zbiór atrybutów wejściowych, które mają być użyte do klasyfikacji.
+#Zbiór U to zbiór par uczących, czyli zestaw danych, które będziesz używać do uczenia modelu.
+#Każda para ucząca składa się z wektora cech (atrybutów wejściowych) oraz odpowiadającej mu klasy (wartości klasowej).
+#Algorytm ID3 wykorzystuje ten zbiór danych uczących, aby stworzyć drzewo decyzyjne, które może być wykorzystane do klasyfikacji nowych danych.
 
+def entropySubsets(u, d):
+
+    frequencyAttributes = {}
+    for x, y in u:
+        if x[d] not in frequencyAttributes:
+            frequencyAttributes[x[d]] = [(x,y)]
+        else:
+            frequencyAttributes[x[d]].append((x,y))
+
+    result = 0.0
+    n = len(u)
+
+    for v in frequencyAttributes.values():
+        simpleCalculation = len(v)/n
+        result += simpleCalculation * entropy(v)
+
+    return result
+
+def infGain(u, d):
+    return entropy(u) - entropySubsets(u, d)
 
 def leafMostFrequentClass(matrix, u):
     yValues = frequencyDictionary(u)
@@ -51,6 +76,23 @@ def id3(matrix, y, d, u):
 
     if len(d) == 0:
         return leafMostFrequentClass(matrix, u)
+
+    maxGain = float('-inf')
+    maxAttribute = None
+    for simpleD in d:
+        gain = infGain(u, simpleD)
+        if gain > maxGain:
+            maxGain = gain
+            maxAttribute = simpleD
+
+    dToDivide = maxAttribute
+
+    Uj = {}
+    for x, y in u:
+        if x[d] not in Uj:
+            Uj[x[d]] = [(x, y)]
+        else:
+            Uj[x[d]].append((x, y))
 
 
 if __name__ == '__main__':
