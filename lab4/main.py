@@ -1,6 +1,6 @@
 import math
 import pandas as pd
-
+from Tree import Tree
 
 def frequencyDictionary(u):
     yValues = {}
@@ -20,6 +20,7 @@ def entropy(u):
         v = yValues[classValue] / n
         result -= v * math.log2(v)
     return result
+
 #W Twoim przypadku zbiór Y to zbiór klas, czyli klasa, którą chcesz przewidzieć.
 #Zbiór D to zbiór atrybutów wejściowych, które mają być użyte do klasyfikacji.
 #Zbiór U to zbiór par uczących, czyli zestaw danych, które będziesz używać do uczenia modelu.
@@ -93,13 +94,19 @@ def id3(matrix, y, d, u):
             Uj[x[d]] = [(x, y)]
         else:
             Uj[x[d]].append((x, y))
-    
+
+    subTrees = {}
+    for dj, UjSet in Uj.items():
+        subTrees[dj] = id3(matrix, y, d - {dToDivide}, UjSet)
+
+    return Tree(d, subTrees)
 
 if __name__ == '__main__':
-    Y = {"not_recom", "recommend", "very_recom", "priority", "spec_prior"}
-    D = {"parents, has_nurs, form, children, housing, finance, social, health"}
+    Y = ["not_recom", "recommend", "very_recom", "priority", "spec_prior"]
+    D = ["parents, has_nurs, form, children, housing, finance, social, health"]
 
     df = pd.read_csv('nursery.data')
     matrix = df.values
+
 
     print(matrix)
