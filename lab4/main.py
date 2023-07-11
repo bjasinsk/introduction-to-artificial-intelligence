@@ -1,112 +1,196 @@
 import math
-import pandas as pd
+import random
+import matplotlib.pyplot as plt
+import seaborn as sns
 from Tree import Tree
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import precision_score
+from sklearn.metrics import recall_score
+from sklearn.model_selection import train_test_split
+import pandas as pd
 
-def frequencyDictionary(u):
-    yValues = {}
+
+def print_tree(node, indent=0):
+    print("  " * indent + str(node.type))
+    if node.value:
+        print("  " * (indent+1) + "Attribute: " + str(node.attribute))
+        print("  " * (indent+1) + "Value: " + str(node.value))
+        print("  " * (indent+1) + "Class Value: " + str(node.class_value))
+    else:
+        print("  " * (indent + 1) + "Class Value: " + str(node.class_value))
+
+    for child in node.children:
+        print_tree(child, indent+1)
+
+def predict(tree, x):
+    if tree.type == "leaf":
+        return tree.class_value
+    else:
+        attribute = tree.attribute
+        value = x[attribute]
+
+        for child in tree.children:
+            if child.value == value:
+                return predict(child, x)
+
+        y_values = frequency_dictionary(tree.dataset)
+
+        max_value = max(y_values.values())
+        for y in y_values:
+            if y_values[y] == max_value:
+                return y
+
+
+def frequency_dictionary(u):
+    y_values = {}
     for x, y in u:
-        if y not in yValues:
-            yValues[y] = 1
+        if y not in y_values:
+            y_values[y] = 1
         else:
-            yValues[y] += 1
-    return yValues
+            y_values[y] += 1
+    return y_values
 
 def entropy(u):
-    yValues = frequencyDictionary(u)
+    y_values = frequency_dictionary(u)
     result = 0.0
     n = len(u)
 
-    for classValue in yValues:
-        v = yValues[classValue] / n
+    for class_value in y_values:
+        v = y_values[class_value] / n
         result -= v * math.log2(v)
     return result
 
-#W Twoim przypadku zbiór Y to zbiór klas, czyli klasa, którą chcesz przewidzieć.
-#Zbiór D to zbiór atrybutów wejściowych, które mają być użyte do klasyfikacji.
-#Zbiór U to zbiór par uczących, czyli zestaw danych, które będziesz używać do uczenia modelu.
-#Każda para ucząca składa się z wektora cech (atrybutów wejściowych) oraz odpowiadającej mu klasy (wartości klasowej).
-#Algorytm ID3 wykorzystuje ten zbiór danych uczących, aby stworzyć drzewo decyzyjne, które może być wykorzystane do klasyfikacji nowych danych.
-
-def entropySubsets(u, d):
-
-    frequencyAttributes = {}
+def entropy_subsets(u, d):
+    frequency_attributes = {}
     for x, y in u:
-        if x[d] not in frequencyAttributes:
-            frequencyAttributes[x[d]] = [(x,y)]
+        if x[d] not in frequency_attributes:
+            frequency_attributes[x[d]] = [(x, y)]
         else:
-            frequencyAttributes[x[d]].append((x,y))
+            frequency_attributes[x[d]].append((x, y))
 
     result = 0.0
     n = len(u)
 
-    for v in frequencyAttributes.values():
-        simpleCalculation = len(v)/n
-        result += simpleCalculation * entropy(v)
+    for v in frequency_attributes.values():
+        simple_calculation = len(v) / n
+        result += simple_calculation * entropy(v)
 
     return result
 
-def infGain(u, d):
-    return entropy(u) - entropySubsets(u, d)
+def information_gain(u, d):
+    return entropy(u) - entropy_subsets(u, d)
 
-def leafMostFrequentClass(matrix, u):
-    yValues = frequencyDictionary(u)
+def leaf_most_frequent_class(matrix, u):
+    y_values = frequency_dictionary(u)
 
-    maxValue = max(yValues.values())
-    for y in yValues:
-        if yValues[y] == maxValue:
-            return leafWithClass(matrix, y)
+    max_value = max(y_values.values())
+    for y in y_values:
+        if y_values[y] == max_value:
+            return leaf_with_class(matrix, y)
 
 
-def leafWithClass(matrix, y):
-    selectedData = []
+def leaf_with_class(matrix, y):
+    selected_data = []
     for row in matrix:
         if row[-1] == y:
-            selectedData.append(row)
-    return selectedData
+            selected_data.append(row)
 
+    return Tree("leaf", None, None, selected_data, None, y)
 
-# Y  set of classes which we try to find
-# D set of attributes, we use them to define nodes in decision tree
-# U set of pairs which teach an algorithm, U can't be empty
-def id3(matrix, y, d, u):
-    yCount = frequencyDictionary(u)
+def id3(matrix, y, d, u, value=None, d_attribute=None):
+    y_count = frequency_dictionary(u)
 
-    for ySimple in y:
-        if ySimple in yCount and yCount[ySimple] == len(u):
-            return leafWithClass(matrix, ySimple)
+    for y_simple in y:
+        if y_simple in y_count and y_count[y_simple] == len(u):
+            return leaf_with_class(matrix, y_simple)
 
     if len(d) == 0:
-        return leafMostFrequentClass(matrix, u)
+        return leaf_most_frequent_class(matrix, u)
 
-    maxGain = float('-inf')
-    maxAttribute = None
-    for simpleD in d:
-        gain = infGain(u, simpleD)
-        if gain > maxGain:
-            maxGain = gain
-            maxAttribute = simpleD
+    max_gain = float('-inf')
+    max_attribute = None
+    for simple_d in d:
+        gain = information_gain(u, simple_d)
+        if gain > max_gain:
+            max_gain = gain
+            max_attribute = simple_d
 
-    dToDivide = maxAttribute
+    d_to_divide = max_attribute
 
-    Uj = {}
+    u_j = {}
     for x, y in u:
-        if x[d] not in Uj:
-            Uj[x[d]] = [(x, y)]
+        if x[d_to_divide] not in u_j:
+            u_j[x[d_to_divide]] = [(x, y)]
         else:
-            Uj[x[d]].append((x, y))
+            u_j[x[d_to_divide]].append((x, y))
 
-    subTrees = {}
-    for dj, UjSet in Uj.items():
-        subTrees[dj] = id3(matrix, y, d - {dToDivide}, UjSet)
+    sub_trees = []
+    for dj, u_j_set in u_j.items():
+        sub_trees.append(id3(matrix, y, d - {d_to_divide}, u_j_set, dj, d_to_divide))
 
-    return Tree(d, subTrees)
+    if d_attribute == None and value == None:
+        return Tree("root", d_to_divide, None, u, sub_trees)
+    else:
+        return Tree("node", d_to_divide, value, u, sub_trees)
+
+def random_forest(matrix, y, d, u, b_trees):
+    F = []
+    n_u = int(0.75*len(u))
+    #n_d = math.floor(math.sqrt(len(d)))
+    n_d = 6
+    for i in range(b_trees):
+        ub = random.choices(u, k=n_u)
+        db = set(random.sample(list(d), n_d))
+        tree_id3 = id3(matrix, y, db, ub)
+
+        print_tree(tree_id3)
+        F.append(tree_id3)
+
+    return F
+
+def predict_random_forest(x, F):
+    C = []
+    for f in F:
+        C.append(predict(f, x))
+    return max(set(C), key=C.count)
 
 if __name__ == '__main__':
-    Y = ["not_recom", "recommend", "very_recom", "priority", "spec_prior"]
-    D = ["parents, has_nurs, form, children, housing, finance, social, health"]
 
     df = pd.read_csv('nursery.data')
     matrix = df.values
 
+    X_train, X_test, y_train, y_test = train_test_split(matrix[:,:-1], matrix[:,-1], test_size=0.2, random_state=46)
 
-    print(matrix)
+
+    x_labels = ['parents', 'has_nurs', 'form', 'children', 'housing', 'finance', 'social', 'health']
+    y_labels = ['not_recom', 'recommend', 'very_recom', 'priority', 'spec_prior']
+
+    forest = random_forest(list(zip(X_train, y_train)), set(y_train), set(range(X_train.shape[1])), list(zip(X_train, y_train)), 100)
+
+    print("len(X_test) = ", len(X_test))
+
+    predictions = []
+    for x in X_test:
+        predictions.append(predict_random_forest(x, forest))
+
+    y_true = y_test
+    y_pred = predictions
+
+    labels = ['not_recom', 'recommend', 'very_recom', 'priority', 'spec_prior']
+    cm = confusion_matrix(y_true, y_pred, labels=labels)
+    sns.heatmap(cm, annot=True, cmap='Blues', fmt='g',xticklabels=['not_recom', 'recommend', 'very_recom', 'priority', 'spec_prior'],yticklabels=['not_recom', 'recommend', 'very_recom', 'priority', 'spec_prior'])
+    plt.xlabel('Predicted')
+    plt.ylabel('True')
+    plt.show()
+    print(cm)
+
+    accuracy = accuracy_score(y_true, y_pred)
+
+    precision = precision_score(y_true, y_pred, average='weighted', zero_division=0)
+
+    recall = recall_score(y_true, y_pred, average='weighted', zero_division=0)
+
+    print("accuracy: ", accuracy)
+    print("precision: ", precision)
+    print("recall: ", recall)
